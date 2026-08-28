@@ -26,7 +26,9 @@ interface Store extends EstadoApp {
   registrarRepeticion: () => { dorada: boolean };
   finalizarSesion: () => ResumenSesion | null;
   cambiarFraseActiva: (objetivoId: string, texto: string) => void;
-  setAjuste: (cambios: Partial<Pick<EstadoApp, 'horaRecordatorio' | 'intensidadDefault'>>) => void;
+  setAjuste: (
+    cambios: Partial<Pick<EstadoApp, 'horaRecordatorio' | 'intensidadDefault' | 'hapticsActivado'>>,
+  ) => void;
   evaluarAlAbrir: () => void;
   borrarTodo: () => void;
 }
@@ -42,6 +44,7 @@ const estadoInicial: EstadoApp = {
   protectores: 0,
   intensidadDefault: 'moderado',
   horaRecordatorio: '09:00',
+  hapticsActivado: true,
 };
 
 function crearFrase(objetivoId: string, texto: string): FraseActiva {

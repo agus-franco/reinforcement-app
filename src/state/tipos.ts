@@ -47,6 +47,7 @@ export interface EstadoApp {
   protectores: number;
   intensidadDefault: Intensidad;
   horaRecordatorio: string;
+  hapticsActivado: boolean;
 }
 
 export type EstadoPersonaje = 'radiante' | 'feliz' | 'preocupado' | 'triste';

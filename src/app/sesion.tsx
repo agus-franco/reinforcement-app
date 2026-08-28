@@ -7,11 +7,12 @@ import { AnilloTiempo } from '@/components/AnilloTiempo';
 import { BarraProgreso } from '@/components/BarraProgreso';
 import { Boton } from '@/components/Boton';
 import { Personaje } from '@/components/Personaje';
+import { SelectorIntensidad } from '@/components/SelectorIntensidad';
 import { esCorrecto } from '@/logic/frase';
 import { useStore } from '@/state/store';
 import { usePersonaje } from '@/state/usePersonaje';
 import { DURACION_SEG, META_REPETICIONES, type Intensidad, type ResumenSesion } from '@/state/tipos';
-import { colores, espaciado, radios, tipografia } from '@/theme/tokens';
+import { colores, espaciado, tipografia } from '@/theme/tokens';
 
 const LINEAS_REFUERZO: ((r: ResumenSesion) => string)[] = [
   (r) => `Día ${r.rachaActual}. Tu frase ya salió ${r.totalFrase} veces de tus dedos.`,
@@ -27,13 +28,6 @@ function lineaRefuerzo(r: ResumenSesion): string {
 
 type Fase = 'selector' | 'escribiendo' | 'resumen';
 
-const INTENSIDADES: { valor: Intensidad; nombre: string }[] = [
-  { valor: 'despacio', nombre: 'Despacio' },
-  { valor: 'moderado', nombre: 'Moderado' },
-  { valor: 'intenso', nombre: 'Intenso' },
-  { valor: 'profundo', nombre: 'Profundo' },
-];
-
 export default function SesionScreen() {
   const frases = useStore((s) => s.frases);
   const fraseActivaId = useStore((s) => s.fraseActivaId);
@@ -41,6 +35,7 @@ export default function SesionScreen() {
   const iniciarSesion = useStore((s) => s.iniciarSesion);
   const registrarRepeticion = useStore((s) => s.registrarRepeticion);
   const finalizarSesion = useStore((s) => s.finalizarSesion);
+  const hapticsActivado = useStore((s) => s.hapticsActivado);
   const personajeEstado = usePersonaje();
 
   const fraseActiva = frases.find((f) => f.id === fraseActivaId);
@@ -119,7 +114,7 @@ export default function SesionScreen() {
     const esperada = fraseActiva.texto[indiceRef.current];
     if (esCorrecto(esperada, letra)) {
       const nuevoIndice = indiceRef.current + 1;
-      Haptics.selectionAsync();
+      if (hapticsActivado) Haptics.selectionAsync();
 
       if (nuevoIndice >= fraseActiva.texto.length) {
         registrarRepeticion();
@@ -132,7 +127,7 @@ export default function SesionScreen() {
         indiceRef.current = nuevoIndice;
         setIndice(nuevoIndice);
       }
-    } else {
+    } else if (hapticsActivado) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     }
   }
@@ -145,22 +140,7 @@ export default function SesionScreen() {
     return (
       <View style={styles.contenedor}>
         <Text style={styles.titulo}>¿Cuánto querés escribir hoy?</Text>
-        <View style={styles.opcionesIntensidad}>
-          {INTENSIDADES.map((i) => (
-            <Pressable
-              key={i.valor}
-              onPress={() => setIntensidad(i.valor)}
-              style={[styles.opcionIntensidad, intensidad === i.valor && styles.opcionIntensidadSeleccionada]}
-            >
-              <Text
-                style={[styles.opcionIntensidadTexto, intensidad === i.valor && styles.opcionIntensidadTextoSeleccionado]}
-              >
-                {i.nombre}
-              </Text>
-              <Text style={styles.opcionIntensidadDuracion}>{DURACION_SEG[i.valor] / 60} min</Text>
-            </Pressable>
-          ))}
-        </View>
+        <SelectorIntensidad valor={intensidad} onCambiar={setIntensidad} />
         <Boton texto="Empezar" onPress={empezarSesion} />
         <Text style={styles.volver} onPress={() => router.replace('/')}>
           ← Volver
@@ -292,38 +272,6 @@ const styles = StyleSheet.create({
     fontSize: tipografia.subtitulo,
     fontWeight: '700',
     textAlign: 'center',
-  },
-  opcionesIntensidad: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: espaciado.s,
-    justifyContent: 'center',
-  },
-  opcionIntensidad: {
-    paddingVertical: espaciado.m,
-    paddingHorizontal: espaciado.m,
-    borderRadius: radios.m,
-    backgroundColor: colores.superficie,
-    borderWidth: 1,
-    borderColor: colores.superficie,
-    alignItems: 'center',
-    minWidth: 90,
-  },
-  opcionIntensidadSeleccionada: {
-    borderColor: colores.acento,
-  },
-  opcionIntensidadTexto: {
-    color: colores.texto,
-    fontSize: tipografia.cuerpo,
-    fontWeight: '600',
-  },
-  opcionIntensidadTextoSeleccionado: {
-    color: colores.acento,
-  },
-  opcionIntensidadDuracion: {
-    color: colores.textoSuave,
-    fontSize: tipografia.chico,
-    marginTop: 2,
   },
   volver: {
     color: colores.acento,
