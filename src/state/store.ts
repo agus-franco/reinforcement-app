@@ -80,6 +80,9 @@ function finalizarSesionInterna(get: () => Store, set: (fn: (s: Store) => Partia
   }
 
   const frase = estado.frases.find((f) => f.id === sesionActual.fraseId);
+  const mejorSesionPrevia = estado.sesiones.reduce((max, s) => Math.max(max, s.repeticiones), 0);
+  const esRecordPersonal = sesionActual.repeticiones > 0 && sesionActual.repeticiones > mejorSesionPrevia;
+  const fraseRecienGrabada = !!frase?.grabada && !sesionActual.yaGrabadaAlEmpezar;
 
   set(() => ({
     sesiones: [...estado.sesiones, sesion],
@@ -94,9 +97,10 @@ function finalizarSesionInterna(get: () => Store, set: (fn: (s: Store) => Partia
     repeticionesHoy: sesionActual.repeticiones,
     totalFrase: frase ? frase.repeticiones : 0,
     metaFrase: META_REPETICIONES,
-    fraseGrabada: frase ? frase.grabada : false,
+    fraseRecienGrabada,
     rachaActual,
     huboDoradas: sesionActual.doradas > 0,
+    esRecordPersonal,
   };
 }
 
@@ -117,8 +121,9 @@ export const useStore = create<Store>()(
       },
 
       iniciarSesion: (intensidad) => {
-        const { fraseActivaId } = get();
+        const { fraseActivaId, frases } = get();
         if (!fraseActivaId) return;
+        const frase = frases.find((f) => f.id === fraseActivaId);
         set({
           sesionActual: {
             fraseId: fraseActivaId,
@@ -126,6 +131,7 @@ export const useStore = create<Store>()(
             inicioTs: Date.now(),
             repeticiones: 0,
             doradas: 0,
+            yaGrabadaAlEmpezar: frase ? frase.grabada : false,
           },
         });
       },

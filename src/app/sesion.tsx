@@ -1,14 +1,29 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AnilloTiempo } from '@/components/AnilloTiempo';
+import { BarraProgreso } from '@/components/BarraProgreso';
 import { Boton } from '@/components/Boton';
+import { Personaje } from '@/components/Personaje';
 import { esCorrecto } from '@/logic/frase';
 import { useStore } from '@/state/store';
+import { usePersonaje } from '@/state/usePersonaje';
 import { DURACION_SEG, META_REPETICIONES, type Intensidad, type ResumenSesion } from '@/state/tipos';
 import { colores, espaciado, radios, tipografia } from '@/theme/tokens';
+
+const LINEAS_REFUERZO: ((r: ResumenSesion) => string)[] = [
+  (r) => `Día ${r.rachaActual}. Tu frase ya salió ${r.totalFrase} veces de tus dedos.`,
+  (r) => `Escribiste ${r.repeticionesHoy} ${r.repeticionesHoy === 1 ? 'vez' : 'veces'} hoy. Cada una cuenta.`,
+  (r) => `Llevás ${r.totalFrase} de ${r.metaFrase} repeticiones. Vas construyendo algo real.`,
+  (r) => `${r.rachaActual} ${r.rachaActual === 1 ? 'día' : 'días'} seguidos reprogramando tu cabeza.`,
+];
+
+function lineaRefuerzo(r: ResumenSesion): string {
+  const generador = LINEAS_REFUERZO[Math.floor(Math.random() * LINEAS_REFUERZO.length)];
+  return generador(r);
+}
 
 type Fase = 'selector' | 'escribiendo' | 'resumen';
 
@@ -26,6 +41,7 @@ export default function SesionScreen() {
   const iniciarSesion = useStore((s) => s.iniciarSesion);
   const registrarRepeticion = useStore((s) => s.registrarRepeticion);
   const finalizarSesion = useStore((s) => s.finalizarSesion);
+  const personajeEstado = usePersonaje();
 
   const fraseActiva = frases.find((f) => f.id === fraseActivaId);
 
@@ -35,6 +51,7 @@ export default function SesionScreen() {
   const [progresoTiempo, setProgresoTiempo] = useState(1);
   const [restanteSeg, setRestanteSeg] = useState(0);
   const [resumen, setResumen] = useState<ResumenSesion | null>(null);
+  const linea = useMemo(() => (resumen ? lineaRefuerzo(resumen) : ''), [resumen]);
 
   const inputRef = useRef<TextInput>(null);
   const finTsRef = useRef(0);
@@ -145,7 +162,7 @@ export default function SesionScreen() {
           ))}
         </View>
         <Boton texto="Empezar" onPress={empezarSesion} />
-        <Text style={styles.volver} onPress={() => router.back()}>
+        <Text style={styles.volver} onPress={() => router.replace('/')}>
           ← Volver
         </Text>
       </View>
@@ -195,21 +212,53 @@ export default function SesionScreen() {
     );
   }
 
+  if (!resumen || resumen.repeticionesHoy === 0) {
+    return (
+      <View style={styles.contenedor}>
+        <Text style={styles.titulo}>Sesión cerrada</Text>
+        <Text style={styles.subtitulo}>No pasa nada, volvé cuando quieras.</Text>
+        <Boton texto="Volver" onPress={() => router.replace('/')} />
+      </View>
+    );
+  }
+
+  if (resumen.fraseRecienGrabada) {
+    return (
+      <View style={styles.contenedor}>
+        <Text style={styles.celebracionEmoji}>🎉</Text>
+        <Text style={styles.titulo}>¡Frase grabada!</Text>
+        <Text style={styles.fraseCelebracion}>"{fraseActiva.texto}"</Text>
+        <Text style={styles.subtitulo}>100 repeticiones. Ahora es parte tuya.</Text>
+        <Boton texto="Volver" onPress={() => router.replace('/')} />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.contenedor}>
-      <Text style={styles.titulo}>
-        {resumen && resumen.repeticionesHoy > 0 ? '¡Listo por hoy!' : 'Sesión cerrada'}
-      </Text>
-      {resumen && (
-        <View style={styles.resumen}>
-          <Text style={styles.resumenLinea}>Repeticiones en esta sesión: {resumen.repeticionesHoy}</Text>
+      <Personaje estado={personajeEstado} tamano={80} />
+      <Text style={styles.titulo}>¡Listo por hoy!</Text>
+
+      <View style={styles.resumen}>
+        <View style={styles.filaProgreso}>
+          <Text style={styles.resumenLinea}>Tu frase</Text>
           <Text style={styles.resumenLinea}>
-            Frase: {resumen.totalFrase}/{resumen.metaFrase}
+            {resumen.totalFrase}/{resumen.metaFrase}
           </Text>
-          <Text style={styles.resumenLinea}>Racha: {resumen.rachaActual} días</Text>
-          {resumen.fraseGrabada && <Text style={styles.resumenDestacado}>🎉 ¡Frase grabada!</Text>}
         </View>
-      )}
+        <BarraProgreso valor={resumen.totalFrase} meta={resumen.metaFrase} />
+      </View>
+
+      <View style={styles.rachaFila}>
+        <Text style={styles.rachaNumero}>🔥 {resumen.rachaActual}</Text>
+        <Text style={styles.resumenLinea}>{resumen.rachaActual === 1 ? 'día' : 'días'} seguidos</Text>
+      </View>
+
+      {resumen.esRecordPersonal && <Text style={styles.badge}>⭐ ¡Tu mejor sesión!</Text>}
+      {resumen.huboDoradas && <Text style={styles.badge}>✨ Encontraste una sinapsis dorada</Text>}
+
+      <Text style={styles.linea}>{linea}</Text>
+
       <Boton texto="Volver" onPress={() => router.replace('/')} />
     </View>
   );
@@ -334,18 +383,54 @@ const styles = StyleSheet.create({
     height: 1,
     width: 1,
   },
+  subtitulo: {
+    color: colores.textoSuave,
+    fontSize: tipografia.cuerpo,
+    textAlign: 'center',
+  },
   resumen: {
     gap: espaciado.s,
-    alignItems: 'center',
+    width: '100%',
   },
   resumenLinea: {
     color: colores.textoSuave,
     fontSize: tipografia.cuerpo,
   },
-  resumenDestacado: {
-    color: colores.dorado,
+  filaProgreso: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  rachaFila: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    gap: espaciado.s,
+  },
+  rachaNumero: {
+    color: colores.texto,
     fontSize: tipografia.subtitulo,
     fontWeight: '700',
-    marginTop: espaciado.s,
+  },
+  badge: {
+    color: colores.dorado,
+    fontSize: tipografia.cuerpo,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  linea: {
+    color: colores.textoSuave,
+    fontSize: tipografia.chico,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  celebracionEmoji: {
+    fontSize: tipografia.titulo * 1.5,
+    textAlign: 'center',
+  },
+  fraseCelebracion: {
+    color: colores.acento,
+    fontSize: tipografia.subtitulo,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

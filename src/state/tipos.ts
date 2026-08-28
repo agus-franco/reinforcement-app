@@ -57,13 +57,17 @@ export interface SesionActual {
   inicioTs: number;
   repeticiones: number;
   doradas: number;
+  /** grabada ya estaba en true al arrancar esta sesión (para no re-festejar). */
+  yaGrabadaAlEmpezar: boolean;
 }
 
 export interface ResumenSesion {
   repeticionesHoy: number;
   totalFrase: number;
   metaFrase: number;
-  fraseGrabada: boolean;
+  /** Se grabó (llegó a 100) recién en ESTA sesión, no que ya estuviera grabada. */
+  fraseRecienGrabada: boolean;
   rachaActual: number;
   huboDoradas: boolean;
+  esRecordPersonal: boolean;
 }
