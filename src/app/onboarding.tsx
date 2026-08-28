@@ -7,6 +7,7 @@ import { Boton } from '@/components/Boton';
 import { Opcion } from '@/components/Opcion';
 import { SelectorHora } from '@/components/SelectorHora';
 import { objetivoPorId, OBJETIVOS } from '@/data/objetivos';
+import { programarRecordatorioDiario } from '@/logic/notificaciones';
 import { validarFrase } from '@/logic/validarFrase';
 import { useStore } from '@/state/store';
 import { colores, espaciado, tipografia } from '@/theme/tokens';
@@ -51,6 +52,7 @@ export default function OnboardingScreen() {
     if (Platform.OS !== 'web') {
       try {
         await Notifications.requestPermissionsAsync();
+        await programarRecordatorioDiario(hora);
       } catch {
         // seguimos igual sin notificaciones: no es bloqueante
       }
