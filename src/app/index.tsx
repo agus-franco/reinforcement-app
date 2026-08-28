@@ -39,6 +39,10 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.progresoLink} onPress={() => router.push('/progreso')}>
+        Progreso →
+      </Text>
+
       <Personaje estado={personajeEstado} tamano={120} />
       <Text style={styles.saludo}>{SALUDO_POR_ESTADO[personajeEstado]}</Text>
 
@@ -74,6 +78,13 @@ const styles = StyleSheet.create({
     backgroundColor: colores.fondo,
     padding: espaciado.l,
     gap: espaciado.l,
+  },
+  progresoLink: {
+    position: 'absolute',
+    top: espaciado.l,
+    right: espaciado.l,
+    color: colores.acento,
+    fontSize: tipografia.chico,
   },
   saludo: {
     color: colores.texto,
