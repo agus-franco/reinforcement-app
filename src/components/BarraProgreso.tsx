@@ -29,11 +29,13 @@ export function BarraProgreso({ valor, meta }: Props) {
 
 const styles = StyleSheet.create({
   track: {
+    // Sin width fijo a propósito: en una columna se estira solo (alignItems:'stretch'
+    // por default), y en una fila el que la usa la envuelve en flex:1 si necesita que
+    // comparta espacio con otro elemento — así sirve para los dos casos.
     height: 8,
     borderRadius: radios.pill,
     backgroundColor: colores.superficie,
     overflow: 'hidden',
-    width: '100%',
   },
   relleno: {
     height: '100%',
