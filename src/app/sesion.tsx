@@ -6,6 +6,8 @@ import { AppState, Platform, Pressable, StyleSheet, Text, TextInput, View } from
 import { AnilloTiempo } from '@/components/AnilloTiempo';
 import { BarraProgreso } from '@/components/BarraProgreso';
 import { Boton } from '@/components/Boton';
+import { FondoRespirando } from '@/components/FondoRespirando';
+import { Particulas, type Rafaga } from '@/components/Particulas';
 import { Personaje } from '@/components/Personaje';
 import { SelectorIntensidad } from '@/components/SelectorIntensidad';
 import { esCorrecto } from '@/logic/frase';
@@ -46,6 +48,7 @@ export default function SesionScreen() {
   const [progresoTiempo, setProgresoTiempo] = useState(1);
   const [restanteSeg, setRestanteSeg] = useState(0);
   const [resumen, setResumen] = useState<ResumenSesion | null>(null);
+  const [rafaga, setRafaga] = useState<Rafaga | null>(null);
   const linea = useMemo(() => (resumen ? lineaRefuerzo(resumen) : ''), [resumen]);
 
   const inputRef = useRef<TextInput>(null);
@@ -117,7 +120,8 @@ export default function SesionScreen() {
       if (hapticsActivado) Haptics.selectionAsync();
 
       if (nuevoIndice >= fraseActiva.texto.length) {
-        registrarRepeticion();
+        const { dorada } = registrarRepeticion();
+        setRafaga({ id: Date.now(), dorado: dorada });
         indiceRef.current = 0;
         setIndice(0);
         if (tiempoAgotadoRef.current) {
@@ -153,6 +157,8 @@ export default function SesionScreen() {
     const repeticionesHoy = fraseActiva.repeticiones;
     return (
       <View style={styles.contenedor}>
+        <FondoRespirando />
+
         <View style={styles.encabezado}>
           <AnilloTiempo progreso={progresoTiempo} tamano={72}>
             <Text style={styles.tiempoRestante}>{formatoTiempo(restanteSeg)}</Text>
@@ -164,6 +170,7 @@ export default function SesionScreen() {
 
         <View style={styles.centro}>
           <FraseFantasma texto={fraseActiva.texto} indice={indice} />
+          <Particulas rafaga={rafaga} />
         </View>
 
         <View style={styles.contador}>
