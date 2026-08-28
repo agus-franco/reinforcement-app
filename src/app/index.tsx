@@ -1,8 +1,22 @@
+import { Redirect } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { useHidratado } from '@/state/useHidratado';
+import { useStore } from '@/state/store';
 import { colores, tipografia } from '@/theme/tokens';
 
 export default function HomeScreen() {
+  const hidratado = useHidratado();
+  const onboardingCompleto = useStore((s) => s.onboardingCompleto);
+
+  if (!hidratado) {
+    return <View style={styles.container} />;
+  }
+
+  if (!onboardingCompleto) {
+    return <Redirect href="/onboarding" />;
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Rewire</Text>
