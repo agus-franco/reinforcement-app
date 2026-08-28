@@ -10,11 +10,17 @@ import { FondoRespirando } from '@/components/FondoRespirando';
 import { Particulas, type Rafaga } from '@/components/Particulas';
 import { Personaje } from '@/components/Personaje';
 import { SelectorIntensidad } from '@/components/SelectorIntensidad';
+import { TarjetaCompartir } from '@/components/TarjetaCompartir';
+import { compartirVista } from '@/logic/compartir';
+import { diasEntre, hoyLocal } from '@/logic/fechas';
 import { esCorrecto } from '@/logic/frase';
+import { diasCompletados } from '@/logic/progreso';
 import { useStore } from '@/state/store';
 import { usePersonaje } from '@/state/usePersonaje';
 import { DURACION_SEG, META_REPETICIONES, type Intensidad, type ResumenSesion } from '@/state/tipos';
 import { colores, espaciado, tipografia } from '@/theme/tokens';
+
+const HITOS_RACHA = [7, 21, 30, 66, 100];
 
 const LINEAS_REFUERZO: ((r: ResumenSesion) => string)[] = [
   (r) => `Día ${r.rachaActual}. Tu frase ya salió ${r.totalFrase} veces de tus dedos.`,
@@ -38,7 +44,23 @@ export default function SesionScreen() {
   const registrarRepeticion = useStore((s) => s.registrarRepeticion);
   const finalizarSesion = useStore((s) => s.finalizarSesion);
   const hapticsActivado = useStore((s) => s.hapticsActivado);
+  const sesiones = useStore((s) => s.sesiones);
   const personajeEstado = usePersonaje();
+
+  const tarjetaRef = useRef<View>(null);
+  const [compartiendo, setCompartiendo] = useState(false);
+
+  async function compartir() {
+    if (compartiendo) return;
+    setCompartiendo(true);
+    try {
+      await compartirVista(tarjetaRef);
+    } catch {
+      // el usuario canceló el share sheet o algo falló; no rompemos la pantalla
+    } finally {
+      setCompartiendo(false);
+    }
+  }
 
   const fraseActiva = frases.find((f) => f.id === fraseActivaId);
 
@@ -210,16 +232,30 @@ export default function SesionScreen() {
   }
 
   if (resumen.fraseRecienGrabada) {
+    const diasParaGrabar = fraseActiva.grabadaEl
+      ? diasEntre(hoyLocal(new Date(fraseActiva.creadaEl)), hoyLocal(new Date(fraseActiva.grabadaEl)))
+      : 0;
     return (
       <View style={styles.contenedor}>
         <Text style={styles.celebracionEmoji}>🎉</Text>
         <Text style={styles.titulo}>¡Frase grabada!</Text>
         <Text style={styles.fraseCelebracion}>"{fraseActiva.texto}"</Text>
         <Text style={styles.subtitulo}>100 repeticiones. Ahora es parte tuya.</Text>
+
+        <View style={styles.tarjetaOculta}>
+          <TarjetaCompartir
+            ref={tarjetaRef}
+            formato="9:16"
+            modo={{ tipo: 'grabada', fraseTexto: fraseActiva.texto, diasParaGrabar }}
+          />
+        </View>
+        <Boton texto="Compartir" variante="secundario" onPress={compartir} deshabilitado={compartiendo} />
         <Boton texto="Volver" onPress={() => router.replace('/')} />
       </View>
     );
   }
+
+  const esHito = HITOS_RACHA.includes(resumen.rachaActual);
 
   return (
     <View style={styles.contenedor}>
@@ -241,11 +277,24 @@ export default function SesionScreen() {
         <Text style={styles.resumenLinea}>{resumen.rachaActual === 1 ? 'día' : 'días'} seguidos</Text>
       </View>
 
+      {esHito && <Text style={styles.badge}>🎉 ¡Llegaste a un hito de racha!</Text>}
       {resumen.esRecordPersonal && <Text style={styles.badge}>⭐ ¡Tu mejor sesión!</Text>}
       {resumen.huboDoradas && <Text style={styles.badge}>✨ Encontraste una sinapsis dorada</Text>}
 
       <Text style={styles.linea}>{linea}</Text>
 
+      <View style={styles.tarjetaOculta}>
+        <TarjetaCompartir
+          ref={tarjetaRef}
+          formato="9:16"
+          modo={
+            esHito
+              ? { tipo: 'hito', racha: resumen.rachaActual, dias: diasCompletados(sesiones) }
+              : { tipo: 'sesion', racha: resumen.rachaActual, repeticionesHoy: resumen.repeticionesHoy, dias: diasCompletados(sesiones) }
+          }
+        />
+      </View>
+      <Boton texto="Compartir" variante="secundario" onPress={compartir} deshabilitado={compartiendo} />
       <Boton texto="Volver" onPress={() => router.replace('/')} />
     </View>
   );
@@ -381,6 +430,11 @@ const styles = StyleSheet.create({
   celebracionEmoji: {
     fontSize: tipografia.titulo * 1.5,
     textAlign: 'center',
+  },
+  tarjetaOculta: {
+    position: 'absolute',
+    left: -9999,
+    top: 0,
   },
   fraseCelebracion: {
     color: colores.acento,
