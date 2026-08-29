@@ -1,5 +1,3 @@
-export const META_REPETICIONES = 100;
-
 export type Intensidad = 'despacio' | 'moderado' | 'intenso' | 'profundo';
 
 export const DURACION_SEG: Record<Intensidad, number> = {
@@ -60,14 +58,19 @@ export interface SesionActual {
   doradas: number;
   /** grabada ya estaba en true al arrancar esta sesión (para no re-festejar). */
   yaGrabadaAlEmpezar: boolean;
+  /** nivel ya alcanzado (nombre) al arrancar esta sesión, para detectar si subió uno nuevo. */
+  nivelAlEmpezar: string | null;
 }
 
 export interface ResumenSesion {
   repeticionesHoy: number;
   totalFrase: number;
+  /** Próximo umbral de nivel no alcanzado (o el umbral final si ya está en el último). */
   metaFrase: number;
-  /** Se grabó (llegó a 100) recién en ESTA sesión, no que ya estuviera grabada. */
+  /** Se grabó (llegó al nivel final) recién en ESTA sesión, no que ya estuviera grabada. */
   fraseRecienGrabada: boolean;
+  /** Nombre del nivel (intermedio o final) recién alcanzado en esta sesión, si hubo uno. */
+  nivelNuevo: string | null;
   rachaActual: number;
   huboDoradas: boolean;
   esRecordPersonal: boolean;

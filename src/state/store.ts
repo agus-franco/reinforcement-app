@@ -4,6 +4,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { hoyLocal } from '@/logic/fechas';
 import { nuevoId } from '@/logic/id';
+import { esNivelFinal, nivelAlcanzado, proximoNivel, UMBRAL_FINAL } from '@/logic/niveles';
 import { alCompletarDia, evaluarAlAbrir as evaluarRachaAlAbrir } from '@/logic/racha';
 import type {
   EstadoApp,
@@ -13,7 +14,6 @@ import type {
   Sesion,
   SesionActual,
 } from './tipos';
-import { META_REPETICIONES } from './tipos';
 
 const SESION_STALE_MS = 30 * 60 * 1000;
 const PROBABILIDAD_DORADA = 0.05;
@@ -87,6 +87,11 @@ function finalizarSesionInterna(get: () => Store, set: (fn: (s: Store) => Partia
   const esRecordPersonal = sesionActual.repeticiones > 0 && sesionActual.repeticiones > mejorSesionPrevia;
   const fraseRecienGrabada = !!frase?.grabada && !sesionActual.yaGrabadaAlEmpezar;
 
+  const nivelAlTerminar = frase ? nivelAlcanzado(frase.repeticiones) : null;
+  const nivelNuevo =
+    nivelAlTerminar && nivelAlTerminar.nombre !== sesionActual.nivelAlEmpezar ? nivelAlTerminar.nombre : null;
+  const metaFrase = frase ? (proximoNivel(frase.repeticiones)?.umbral ?? UMBRAL_FINAL) : UMBRAL_FINAL;
+
   set(() => ({
     sesiones: [...estado.sesiones, sesion],
     rachaActual,
@@ -99,8 +104,9 @@ function finalizarSesionInterna(get: () => Store, set: (fn: (s: Store) => Partia
   return {
     repeticionesHoy: sesionActual.repeticiones,
     totalFrase: frase ? frase.repeticiones : 0,
-    metaFrase: META_REPETICIONES,
+    metaFrase,
     fraseRecienGrabada,
+    nivelNuevo,
     rachaActual,
     huboDoradas: sesionActual.doradas > 0,
     esRecordPersonal,
@@ -135,6 +141,7 @@ export const useStore = create<Store>()(
             repeticiones: 0,
             doradas: 0,
             yaGrabadaAlEmpezar: frase ? frase.grabada : false,
+            nivelAlEmpezar: frase ? (nivelAlcanzado(frase.repeticiones)?.nombre ?? null) : null,
           },
         });
       },
@@ -153,8 +160,8 @@ export const useStore = create<Store>()(
 
         const frases = estado.frases.map((f) => {
           if (f.id !== sesionActual.fraseId || f.grabada) return f;
-          const repeticiones = Math.min(META_REPETICIONES, f.repeticiones + 1);
-          const grabada = repeticiones >= META_REPETICIONES;
+          const repeticiones = f.repeticiones + 1;
+          const grabada = esNivelFinal(repeticiones);
           return {
             ...f,
             repeticiones,

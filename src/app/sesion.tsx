@@ -15,6 +15,7 @@ import { TarjetaCompartir } from '@/components/TarjetaCompartir';
 import { compartirVista } from '@/logic/compartir';
 import { diasEntre, hoyLocal } from '@/logic/fechas';
 import { esCorrecto } from '@/logic/frase';
+import { UMBRAL_FINAL } from '@/logic/niveles';
 import { diasCompletados, grillaDias } from '@/logic/progreso';
 import { useStore } from '@/state/store';
 import { usePersonaje } from '@/state/usePersonaje';
@@ -243,7 +244,7 @@ export default function SesionScreen() {
         <Text style={styles.celebracionEmoji}>🎉</Text>
         <Text style={styles.titulo}>¡Frase grabada!</Text>
         <Text style={styles.fraseCelebracion}>"{fraseActiva.texto}"</Text>
-        <Text style={styles.subtitulo}>100 repeticiones. Ahora es parte tuya.</Text>
+        <Text style={styles.subtitulo}>{UMBRAL_FINAL} repeticiones. Ahora es parte tuya.</Text>
 
         <View style={styles.tarjetaOculta}>
           <TarjetaCompartir
@@ -280,6 +281,7 @@ export default function SesionScreen() {
         <Text style={styles.resumenLinea}>{resumen.rachaActual === 1 ? 'día' : 'días'} seguidos</Text>
       </View>
 
+      {resumen.nivelNuevo && <Text style={styles.badge}>🆙 ¡Subiste de nivel: {resumen.nivelNuevo}!</Text>}
       {esHito && <Text style={styles.badge}>🎉 ¡Llegaste a un hito de racha!</Text>}
       {resumen.esRecordPersonal && <Text style={styles.badge}>⭐ ¡Tu mejor sesión!</Text>}
       {resumen.huboDoradas && <Text style={styles.badge}>✨ Encontraste una sinapsis dorada</Text>}

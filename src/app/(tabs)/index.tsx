@@ -10,6 +10,7 @@ import { TarjetaCompartir } from '@/components/TarjetaCompartir';
 import { objetivoPorId } from '@/data/objetivos';
 import { compartirVista } from '@/logic/compartir';
 import { hoyLocal } from '@/logic/fechas';
+import { nivelAlcanzado, proximoNivel, UMBRAL_FINAL } from '@/logic/niveles';
 import { diasCompletados, grillaDias } from '@/logic/progreso';
 import { useStore } from '@/state/store';
 import { usePersonaje } from '@/state/usePersonaje';
@@ -35,6 +36,9 @@ export default function HomeScreen() {
 
   const fraseActiva = frases.find((f) => f.id === fraseActivaId);
   const objetivo = fraseActiva ? objetivoPorId(fraseActiva.objetivoId) : undefined;
+  const nivelActivo = fraseActiva ? nivelAlcanzado(fraseActiva.repeticiones) : null;
+  const siguienteNivel = fraseActiva ? proximoNivel(fraseActiva.repeticiones) : null;
+  const metaNivel = siguienteNivel?.umbral ?? UMBRAL_FINAL;
 
   const hoy = hoyLocal();
   const puntosTotales = sesiones.reduce((sum, s) => sum + s.repeticiones, 0);
@@ -72,12 +76,23 @@ export default function HomeScreen() {
         <View style={styles.frase}>
           {objetivo && <Text style={styles.objetivoTag}>{objetivo.emoji} {objetivo.nombre}</Text>}
           <Text style={styles.fraseTexto}>"{fraseActiva.texto}"</Text>
-          <View style={styles.fraseProgresoFila}>
-            <View style={styles.fraseProgresoBarra}>
-              <BarraProgreso valor={fraseActiva.repeticiones} meta={100} />
-            </View>
-            <Text style={styles.fraseProgresoTexto}>{fraseActiva.repeticiones}/100</Text>
-          </View>
+
+          {fraseActiva.grabada ? (
+            <Text style={styles.nivelTexto}>🏅 Creencia grabada</Text>
+          ) : (
+            <>
+              {nivelActivo && <Text style={styles.nivelTexto}>Nivel: {nivelActivo.nombre}</Text>}
+              <View style={styles.fraseProgresoFila}>
+                <View style={styles.fraseProgresoBarra}>
+                  <BarraProgreso valor={fraseActiva.repeticiones} meta={metaNivel} />
+                </View>
+                <Text style={styles.fraseProgresoTexto}>
+                  {fraseActiva.repeticiones}/{metaNivel}
+                </Text>
+              </View>
+              {siguienteNivel && <Text style={styles.proximoNivelTexto}>Próximo nivel: {siguienteNivel.nombre}</Text>}
+            </>
+          )}
         </View>
       )}
 
@@ -149,6 +164,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   objetivoTag: {
+    color: colores.textoSuave,
+    fontSize: tipografia.chico,
+  },
+  nivelTexto: {
+    color: colores.dorado,
+    fontSize: tipografia.chico,
+    fontWeight: '600',
+  },
+  proximoNivelTexto: {
     color: colores.textoSuave,
     fontSize: tipografia.chico,
   },
