@@ -1,4 +1,4 @@
-import { diaAnterior, diasEntre, hoyLocal } from '../fechas';
+import { diaAnterior, diasEntre, hoyLocal, restarDias } from '../fechas';
 
 describe('hoyLocal', () => {
   it('usa la fecha local, no UTC (medianoche no debe saltar de día)', () => {
@@ -48,5 +48,20 @@ describe('diaAnterior', () => {
 
   it('cruza años', () => {
     expect(diaAnterior('2027-01-01')).toBe('2026-12-31');
+  });
+});
+
+describe('restarDias', () => {
+  it('restar 0 días devuelve la misma fecha', () => {
+    expect(restarDias('2026-08-26', 0)).toBe('2026-08-26');
+  });
+
+  it('restar 1 día equivale a diaAnterior', () => {
+    expect(restarDias('2026-08-26', 1)).toBe(diaAnterior('2026-08-26'));
+  });
+
+  it('restar varios días cruzando meses y años', () => {
+    expect(restarDias('2026-08-26', 30)).toBe('2026-07-27');
+    expect(restarDias('2027-01-05', 10)).toBe('2026-12-26');
   });
 });

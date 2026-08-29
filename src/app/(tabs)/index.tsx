@@ -1,14 +1,19 @@
-import { Redirect, router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { useRef, useState } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { BarraProgreso } from '@/components/BarraProgreso';
 import { Boton } from '@/components/Boton';
+import { GrillaChecks } from '@/components/GrillaChecks';
 import { Personaje } from '@/components/Personaje';
+import { TarjetaCompartir } from '@/components/TarjetaCompartir';
 import { objetivoPorId } from '@/data/objetivos';
+import { compartirVista } from '@/logic/compartir';
+import { hoyLocal } from '@/logic/fechas';
+import { diasCompletados, grillaDias } from '@/logic/progreso';
 import { useStore } from '@/state/store';
 import { usePersonaje } from '@/state/usePersonaje';
 import type { EstadoPersonaje } from '@/state/tipos';
-import { useHidratado } from '@/state/useHidratado';
 import { colores, espaciado, tipografia } from '@/theme/tokens';
 
 const SALUDO_POR_ESTADO: Record<EstadoPersonaje, string> = {
@@ -19,36 +24,43 @@ const SALUDO_POR_ESTADO: Record<EstadoPersonaje, string> = {
 };
 
 export default function HomeScreen() {
-  const hidratado = useHidratado();
-  const onboardingCompleto = useStore((s) => s.onboardingCompleto);
   const rachaActual = useStore((s) => s.rachaActual);
   const frases = useStore((s) => s.frases);
   const fraseActivaId = useStore((s) => s.fraseActivaId);
+  const sesiones = useStore((s) => s.sesiones);
   const personajeEstado = usePersonaje();
 
-  if (!hidratado) {
-    return <View style={styles.container} />;
-  }
-
-  if (!onboardingCompleto) {
-    return <Redirect href="/onboarding" />;
-  }
+  const tarjetaRef = useRef<View>(null);
+  const [compartiendo, setCompartiendo] = useState(false);
 
   const fraseActiva = frases.find((f) => f.id === fraseActivaId);
   const objetivo = fraseActiva ? objetivoPorId(fraseActiva.objetivoId) : undefined;
 
+  const hoy = hoyLocal();
+  const puntosTotales = sesiones.reduce((sum, s) => sum + s.repeticiones, 0);
+  const puntosHoy = sesiones.filter((s) => s.fecha === hoy).reduce((sum, s) => sum + s.repeticiones, 0);
+  const grilla = grillaDias(sesiones, hoy, 3);
+
+  async function compartir() {
+    if (compartiendo) return;
+    setCompartiendo(true);
+    try {
+      await compartirVista(tarjetaRef);
+    } catch {
+      // el usuario canceló o algo falló; no rompemos la pantalla
+    } finally {
+      setCompartiendo(false);
+    }
+  }
+
   return (
-    <View style={styles.container}>
-      <View style={styles.enlacesFila}>
-        <Text style={styles.enlace} onPress={() => router.push('/progreso')}>
-          Progreso →
-        </Text>
-        <Text style={styles.enlace} onPress={() => router.push('/ajustes')}>
-          ⚙️ Ajustes
-        </Text>
+    <ScrollView contentContainerStyle={styles.contenedor}>
+      <View style={styles.header}>
+        <Text style={styles.puntosNumero}>{puntosTotales}</Text>
+        <Text style={styles.puntosTexto}>puntos</Text>
       </View>
 
-      <Personaje estado={personajeEstado} tamano={120} />
+      <Personaje estado={personajeEstado} tamano={100} />
       <Text style={styles.saludo}>{SALUDO_POR_ESTADO[personajeEstado]}</Text>
 
       <View style={styles.rachaFila}>
@@ -58,9 +70,8 @@ export default function HomeScreen() {
 
       {fraseActiva && (
         <View style={styles.frase}>
-          <Text style={styles.fraseTexto}>
-            {objetivo ? `${objetivo.emoji} ` : ''}"{fraseActiva.texto}"
-          </Text>
+          {objetivo && <Text style={styles.objetivoTag}>{objetivo.emoji} {objetivo.nombre}</Text>}
+          <Text style={styles.fraseTexto}>"{fraseActiva.texto}"</Text>
           <View style={styles.fraseProgresoFila}>
             <View style={styles.fraseProgresoBarra}>
               <BarraProgreso valor={fraseActiva.repeticiones} meta={100} />
@@ -70,31 +81,47 @@ export default function HomeScreen() {
         </View>
       )}
 
-      <Boton texto="Escribir ahora" onPress={() => router.push('/sesion')} />
-    </View>
+      <View style={styles.grillaContenedor}>
+        <GrillaChecks filas={grilla} />
+      </View>
+
+      <View style={styles.tarjetaOculta}>
+        <TarjetaCompartir
+          ref={tarjetaRef}
+          formato="9:16"
+          modo={{ tipo: 'sesion', racha: rachaActual, repeticionesHoy: puntosHoy, dias: diasCompletados(sesiones) }}
+        />
+      </View>
+
+      <View style={styles.botones}>
+        <Boton texto="Compartir" variante="secundario" onPress={compartir} deshabilitado={compartiendo} />
+        <Boton texto="Comenzar" onPress={() => router.push('/sesion')} />
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  contenedor: {
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colores.fondo,
     padding: espaciado.l,
     gap: espaciado.l,
   },
-  enlacesFila: {
-    position: 'absolute',
-    top: espaciado.l,
-    left: espaciado.l,
-    right: espaciado.l,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  header: {
+    alignItems: 'center',
   },
-  enlace: {
-    color: colores.acento,
+  puntosNumero: {
+    color: colores.texto,
+    fontSize: tipografia.titulo,
+    fontWeight: '700',
+  },
+  puntosTexto: {
+    color: colores.textoSuave,
     fontSize: tipografia.chico,
+    textTransform: 'uppercase',
   },
   saludo: {
     color: colores.texto,
@@ -119,6 +146,11 @@ const styles = StyleSheet.create({
   frase: {
     width: '100%',
     gap: espaciado.s,
+    alignItems: 'center',
+  },
+  objetivoTag: {
+    color: colores.textoSuave,
+    fontSize: tipografia.chico,
   },
   fraseTexto: {
     color: colores.acento,
@@ -126,6 +158,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   fraseProgresoFila: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     gap: espaciado.s,
@@ -137,5 +170,18 @@ const styles = StyleSheet.create({
     color: colores.textoSuave,
     fontSize: tipografia.chico,
     fontVariant: ['tabular-nums'],
+  },
+  grillaContenedor: {
+    width: '100%',
+    maxWidth: 260,
+  },
+  tarjetaOculta: {
+    position: 'absolute',
+    left: -9999,
+    top: 0,
+  },
+  botones: {
+    width: '100%',
+    gap: espaciado.s,
   },
 });

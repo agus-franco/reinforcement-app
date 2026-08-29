@@ -16,10 +16,15 @@ export function diasEntre(a: string, b: string): number {
   return Math.round((msB - msA) / 86_400_000);
 }
 
-/** Fecha 'YYYY-MM-DD' del día anterior a la dada. */
-export function diaAnterior(fecha: string): string {
+/** Fecha 'YYYY-MM-DD' resultante de restar n días a la dada (n puede ser 0). */
+export function restarDias(fecha: string, n: number): string {
   const [y, m, d] = fecha.split('-').map(Number);
-  const ms = Date.UTC(y, m - 1, d) - 86_400_000;
+  const ms = Date.UTC(y, m - 1, d) - n * 86_400_000;
   const dt = new Date(ms);
   return `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth() + 1)}-${pad(dt.getUTCDate())}`;
+}
+
+/** Fecha 'YYYY-MM-DD' del día anterior a la dada. */
+export function diaAnterior(fecha: string): string {
+  return restarDias(fecha, 1);
 }

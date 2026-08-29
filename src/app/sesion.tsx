@@ -7,6 +7,7 @@ import { AnilloTiempo } from '@/components/AnilloTiempo';
 import { BarraProgreso } from '@/components/BarraProgreso';
 import { Boton } from '@/components/Boton';
 import { FondoRespirando } from '@/components/FondoRespirando';
+import { GrillaChecks } from '@/components/GrillaChecks';
 import { Particulas, type Rafaga } from '@/components/Particulas';
 import { Personaje } from '@/components/Personaje';
 import { SelectorIntensidad } from '@/components/SelectorIntensidad';
@@ -14,10 +15,10 @@ import { TarjetaCompartir } from '@/components/TarjetaCompartir';
 import { compartirVista } from '@/logic/compartir';
 import { diasEntre, hoyLocal } from '@/logic/fechas';
 import { esCorrecto } from '@/logic/frase';
-import { diasCompletados } from '@/logic/progreso';
+import { diasCompletados, grillaDias } from '@/logic/progreso';
 import { useStore } from '@/state/store';
 import { usePersonaje } from '@/state/usePersonaje';
-import { DURACION_SEG, META_REPETICIONES, type Intensidad, type ResumenSesion } from '@/state/tipos';
+import { DURACION_SEG, type Intensidad, type ResumenSesion } from '@/state/tipos';
 import { colores, espaciado, tipografia } from '@/theme/tokens';
 
 const HITOS_RACHA = [7, 21, 30, 66, 100];
@@ -182,24 +183,26 @@ export default function SesionScreen() {
         <FondoRespirando />
 
         <View style={styles.encabezado}>
-          <AnilloTiempo progreso={progresoTiempo} tamano={72}>
+          <AnilloTiempo progreso={progresoTiempo} tamano={92}>
             <Text style={styles.tiempoRestante}>{formatoTiempo(restanteSeg)}</Text>
           </AnilloTiempo>
-          <Pressable onPress={cerrarSesion} hitSlop={12}>
-            <Text style={styles.cerrar}>✕</Text>
-          </Pressable>
+          <View style={styles.encabezadoDerecha}>
+            <Pressable onPress={cerrarSesion} hitSlop={12}>
+              <Text style={styles.cerrar}>✕</Text>
+            </Pressable>
+            <Text style={styles.puntosNumero}>{repeticionesHoy}</Text>
+            <Text style={styles.puntosTexto}>{repeticionesHoy === 1 ? 'point' : 'points'}</Text>
+          </View>
         </View>
 
         <View style={styles.centro}>
           <FraseFantasma texto={fraseActiva.texto} indice={indice} />
           <Particulas rafaga={rafaga} />
+          <Personaje estado={personajeEstado} tamano={44} />
         </View>
 
-        <View style={styles.contador}>
-          <Text style={styles.contadorGrande}>{repeticionesHoy}</Text>
-          <Text style={styles.contadorChico}>
-            {Math.min(repeticionesHoy, META_REPETICIONES)}/{META_REPETICIONES}
-          </Text>
+        <View style={styles.grillaContenedor}>
+          <GrillaChecks filas={grillaDias(sesiones, hoyLocal(), 1)} />
         </View>
 
         <TextInput
@@ -341,11 +344,27 @@ const styles = StyleSheet.create({
     right: espaciado.l,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+  },
+  encabezadoDerecha: {
+    alignItems: 'flex-end',
+    gap: 2,
   },
   cerrar: {
     color: colores.textoSuave,
     fontSize: tipografia.subtitulo,
+    marginBottom: espaciado.s,
+  },
+  puntosNumero: {
+    color: colores.texto,
+    fontSize: tipografia.titulo,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  puntosTexto: {
+    color: colores.textoSuave,
+    fontSize: tipografia.chico,
+    textTransform: 'uppercase',
   },
   tiempoRestante: {
     color: colores.textoSuave,
@@ -355,6 +374,7 @@ const styles = StyleSheet.create({
   centro: {
     alignItems: 'center',
     justifyContent: 'center',
+    gap: espaciado.m,
   },
   frase: {
     fontSize: tipografia.frase,
@@ -367,19 +387,10 @@ const styles = StyleSheet.create({
   fraseFantasma: {
     color: colores.textoSuave,
   },
-  contador: {
-    alignItems: 'center',
-  },
-  contadorGrande: {
-    color: colores.texto,
-    fontSize: tipografia.titulo,
-    fontWeight: '700',
-    fontVariant: ['tabular-nums'],
-  },
-  contadorChico: {
-    color: colores.textoSuave,
-    fontSize: tipografia.chico,
-    fontVariant: ['tabular-nums'],
+  grillaContenedor: {
+    width: '80%',
+    maxWidth: 260,
+    alignSelf: 'center',
   },
   inputOculto: {
     position: 'absolute',

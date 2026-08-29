@@ -1,4 +1,4 @@
-import { diasCompletados, pseudoAleatorio } from '../progreso';
+import { diasCompletados, grillaDias, pseudoAleatorio } from '../progreso';
 import type { Sesion } from '@/state/tipos';
 
 function sesion(parcial: Partial<Sesion>): Sesion {
@@ -40,6 +40,45 @@ describe('diasCompletados', () => {
   it('un día es dorado si alguna sesión de ese día tuvo doradas', () => {
     const r = diasCompletados([sesion({ fecha: '2026-08-20', doradas: 0 }), sesion({ fecha: '2026-08-20', doradas: 2 })]);
     expect(r[0].dorado).toBe(true);
+  });
+});
+
+describe('grillaDias', () => {
+  const HOY = '2026-08-26';
+
+  it('devuelve `filas` filas de 7 días cada una', () => {
+    const g = grillaDias([], HOY, 3);
+    expect(g).toHaveLength(3);
+    g.forEach((fila) => expect(fila).toHaveLength(7));
+  });
+
+  it('hoy es el último día de la última fila', () => {
+    const g = grillaDias([], HOY, 2);
+    expect(g[1][6].fecha).toBe(HOY);
+  });
+
+  it('los días son consecutivos y crecientes de principio a fin', () => {
+    const g = grillaDias([], HOY, 2);
+    const plano = g.flat().map((d) => d.fecha);
+    for (let i = 1; i < plano.length; i++) {
+      expect(plano[i] > plano[i - 1]).toBe(true);
+    }
+  });
+
+  it('marca completado el día que tuvo una sesión con repeticiones', () => {
+    const g = grillaDias([sesion({ fecha: HOY })], HOY, 1);
+    expect(g[0][6].completado).toBe(true);
+    expect(g[0][0].completado).toBe(false);
+  });
+
+  it('marca dorado el día que tuvo una repetición dorada', () => {
+    const g = grillaDias([sesion({ fecha: HOY, doradas: 1 })], HOY, 1);
+    expect(g[0][6].dorado).toBe(true);
+  });
+
+  it('sin sesiones, ningún día está completado', () => {
+    const g = grillaDias([], HOY, 3);
+    expect(g.flat().every((d) => !d.completado)).toBe(true);
   });
 });
 

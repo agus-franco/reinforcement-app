@@ -11,7 +11,7 @@ function fechaCorta(iso: string): string {
   return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
 }
 
-export default function ProgresoScreen() {
+export default function PerfilScreen() {
   const rachaActual = useStore((s) => s.rachaActual);
   const mejorRacha = useStore((s) => s.mejorRacha);
   const sesiones = useStore((s) => s.sesiones);
@@ -19,16 +19,22 @@ export default function ProgresoScreen() {
 
   const dias = diasCompletados(sesiones);
   const grabadas = frases.filter((f) => f.grabada);
+  const puntosTotales = sesiones.reduce((sum, s) => sum + s.repeticiones, 0);
 
   return (
     <ScrollView contentContainerStyle={styles.contenedor}>
-      <Text style={styles.volver} onPress={() => router.replace('/')}>
-        ← Volver
-      </Text>
-
-      <Text style={styles.titulo}>Tu progreso</Text>
+      <View style={styles.encabezado}>
+        <Text style={styles.titulo}>Perfil</Text>
+        <Text style={styles.ajustesLink} onPress={() => router.push('/ajustes')}>
+          ⚙️ Ajustes
+        </Text>
+      </View>
 
       <View style={styles.rachasFila}>
+        <View style={styles.rachaBloque}>
+          <Text style={styles.rachaNumero}>{puntosTotales}</Text>
+          <Text style={styles.rachaTexto}>puntos</Text>
+        </View>
         <View style={styles.rachaBloque}>
           <Text style={styles.rachaNumero}>🔥 {rachaActual}</Text>
           <Text style={styles.rachaTexto}>racha actual</Text>
@@ -70,19 +76,24 @@ const styles = StyleSheet.create({
     gap: espaciado.l,
     alignItems: 'center',
   },
-  volver: {
-    alignSelf: 'flex-start',
-    color: colores.acento,
-    fontSize: tipografia.chico,
+  encabezado: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   titulo: {
     color: colores.texto,
-    fontSize: tipografia.subtitulo,
+    fontSize: tipografia.titulo,
     fontWeight: '700',
+  },
+  ajustesLink: {
+    color: colores.acento,
+    fontSize: tipografia.chico,
   },
   rachasFila: {
     flexDirection: 'row',
-    gap: espaciado.xl,
+    gap: espaciado.l,
   },
   rachaBloque: {
     alignItems: 'center',
@@ -90,7 +101,7 @@ const styles = StyleSheet.create({
   },
   rachaNumero: {
     color: colores.texto,
-    fontSize: tipografia.titulo,
+    fontSize: tipografia.subtitulo,
     fontWeight: '700',
   },
   rachaTexto: {
