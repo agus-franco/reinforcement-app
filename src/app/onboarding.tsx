@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -10,11 +10,14 @@ import { objetivoPorId, OBJETIVOS } from '@/data/objetivos';
 import { programarRecordatorioDiario } from '@/logic/notificaciones';
 import { validarFrase } from '@/logic/validarFrase';
 import { useStore } from '@/state/store';
+import { useHidratado } from '@/state/useHidratado';
 import { colores, espaciado, tipografia } from '@/theme/tokens';
 
 type Paso = 1 | 2 | 3;
 
 export default function OnboardingScreen() {
+  const hidratado = useHidratado();
+  const onboardingCompleto = useStore((s) => s.onboardingCompleto);
   const completarOnboarding = useStore((s) => s.completarOnboarding);
 
   const [paso, setPaso] = useState<Paso>(1);
@@ -61,6 +64,11 @@ export default function OnboardingScreen() {
     completarOnboarding(objetivoId, fraseElegida, hora);
     router.replace('/');
   }
+
+  // Evita re-onboardear (y borrar frases/progreso ya existentes: completarOnboarding
+  // reemplaza el array de frases entero) si se llega acá por error una vez completado.
+  if (!hidratado) return null;
+  if (onboardingCompleto) return <Redirect href="/" />;
 
   return (
     <ScrollView contentContainerStyle={styles.contenedor}>

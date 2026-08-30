@@ -120,6 +120,8 @@ export const useStore = create<Store>()(
       sesionActual: null,
 
       completarOnboarding: (objetivoId, textoFrase, hora) => {
+        // Reemplaza frases entero: nunca correr esto dos veces o se pierde el progreso.
+        if (get().onboardingCompleto) return;
         const frase = crearFrase(objetivoId, textoFrase);
         set({
           onboardingCompleto: true,

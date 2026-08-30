@@ -73,6 +73,7 @@ export default function SesionScreen() {
   const [restanteSeg, setRestanteSeg] = useState(0);
   const [resumen, setResumen] = useState<ResumenSesion | null>(null);
   const [rafaga, setRafaga] = useState<Rafaga | null>(null);
+  const [repsEnSesion, setRepsEnSesion] = useState(0);
   const linea = useMemo(() => (resumen ? lineaRefuerzo(resumen) : ''), [resumen]);
 
   const inputRef = useRef<TextInput>(null);
@@ -122,6 +123,7 @@ export default function SesionScreen() {
     setProgresoTiempo(1);
     setRestanteSeg(DURACION_SEG[intensidad]);
     setIndice(0);
+    setRepsEnSesion(0);
     iniciarSesion(intensidad);
     setFase('escribiendo');
     setTimeout(() => inputRef.current?.focus(), 50);
@@ -146,6 +148,7 @@ export default function SesionScreen() {
       if (nuevoIndice >= fraseActiva.texto.length) {
         const { dorada } = registrarRepeticion();
         setRafaga({ id: Date.now(), dorado: dorada });
+        setRepsEnSesion((r) => r + 1);
         indiceRef.current = 0;
         setIndice(0);
         if (tiempoAgotadoRef.current) {
@@ -178,7 +181,6 @@ export default function SesionScreen() {
   }
 
   if (fase === 'escribiendo') {
-    const repeticionesHoy = fraseActiva.repeticiones;
     return (
       <View style={styles.contenedor}>
         <FondoRespirando />
@@ -191,14 +193,17 @@ export default function SesionScreen() {
             <Pressable onPress={cerrarSesion} hitSlop={12}>
               <Text style={styles.cerrar}>✕</Text>
             </Pressable>
-            <Text style={styles.puntosNumero}>{repeticionesHoy}</Text>
-            <Text style={styles.puntosTexto}>{repeticionesHoy === 1 ? 'point' : 'points'}</Text>
+            <Text style={styles.puntosNumero}>{repsEnSesion}</Text>
+            <Text style={styles.puntosTexto}>{repsEnSesion === 1 ? 'point' : 'points'}</Text>
           </View>
         </View>
 
         <View style={styles.centro}>
           <FraseFantasma texto={fraseActiva.texto} indice={indice} />
           <Particulas rafaga={rafaga} />
+        </View>
+
+        <View style={styles.personajeCentrado}>
           <Personaje estado={personajeEstado} tamano={44} />
         </View>
 
@@ -263,7 +268,9 @@ export default function SesionScreen() {
 
   return (
     <View style={styles.contenedor}>
-      <Personaje estado={personajeEstado} tamano={80} />
+      <View style={styles.personajeCentrado}>
+        <Personaje estado={personajeEstado} tamano={80} />
+      </View>
       <Text style={styles.titulo}>¡Listo por hoy!</Text>
 
       <View style={styles.resumen}>
@@ -388,6 +395,9 @@ const styles = StyleSheet.create({
   },
   fraseFantasma: {
     color: colores.textoSuave,
+  },
+  personajeCentrado: {
+    alignSelf: 'center',
   },
   grillaContenedor: {
     width: '80%',
