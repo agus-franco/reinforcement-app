@@ -180,9 +180,9 @@ export const useStore = create<Store>()(
 
       cambiarFraseActiva: (objetivoId, texto) => {
         const estado = get();
-        const existente = estado.frases.find(
-          (f) => f.objetivoId === objetivoId && f.texto === texto && !f.grabada,
-        );
+        // Incluye a las ya grabadas: reactivar la misma frase (con su nivel intacto)
+        // en vez de crear una entrada duplicada que arranca de nuevo desde 0.
+        const existente = estado.frases.find((f) => f.objetivoId === objetivoId && f.texto === texto);
         if (existente) {
           set({ fraseActivaId: existente.id });
           return;
